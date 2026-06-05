@@ -78,10 +78,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-const trendLabels = {{ trend_labels|safe }};
-const trendValues = {{ trend_values|safe }};
-const popularityLabels = {{ popularity_labels|safe }};
-const popularityValues = {{ popularity_values|safe }};
+const trendLabels = JSON.parse('{{ trend_labels|escapejs }}');
+const trendValues = JSON.parse('{{ trend_values|escapejs }}');
+const popularityLabels = JSON.parse('{{ popularity_labels|escapejs }}');
+const popularityValues = JSON.parse('{{ popularity_values|escapejs }}');
 
 new Chart(document.getElementById('revenueTrendChart'), {
     type: 'line',
