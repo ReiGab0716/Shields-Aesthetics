@@ -240,6 +240,11 @@ document.addEventListener('click', function(e) {
             csrfInput.value = '{{ csrf_token }}';
             
             form.appendChild(csrfInput);
+            const nextInput = document.createElement('input');
+            nextInput.type = 'hidden';
+            nextInput.name = 'next';
+            nextInput.value = window.location.pathname + window.location.search;
+            form.appendChild(nextInput);
             document.body.appendChild(form);
             form.submit();
         }

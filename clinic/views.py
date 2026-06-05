@@ -14,6 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.text import slugify
 
 from .models import Appointment, PatientProfileAudit, Profile, Service
@@ -63,6 +64,17 @@ def profile_refresh_response(request):
         response["HX-Redirect"] = reverse("patient_profile")
         return response
     return redirect("patient_profile")
+
+
+def redirect_to_next(request, fallback):
+    next_url = request.POST.get("next") or request.GET.get("next")
+    if next_url and url_has_allowed_host_and_scheme(
+        next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(fallback)
 
 
 def parse_booking_datetime(appointment_date, appointment_time):
@@ -368,20 +380,25 @@ def patient_profile(request):
         if 'update_profile' in request.POST:
             old_username = user.username
             old_email = user.email
+            old_phone = profile.phone_number or ""
             new_username = request.POST.get('username', user.username).strip()
             new_email = request.POST.get('email', '').strip()
             first_name = request.POST.get('first_name', '').strip()
             last_name = request.POST.get('last_name', '').strip()
             phone = request.POST.get('phone', '').strip()
+            email_changed = new_email.lower() != (old_email or "").lower()
+            phone_changed = phone != old_phone
 
             if User.objects.filter(username__iexact=new_username).exclude(id=user.id).exists():
                 messages.error(request, "Username is already taken.")
-            elif new_email and User.objects.filter(email__iexact=new_email).exclude(id=user.id).exists():
+            elif email_changed and new_email and User.objects.filter(email__iexact=new_email).exclude(id=user.id).exists():
                 messages.error(request, "Email is already used by another account.")
             elif not is_valid_phone(phone):
                 messages.error(request, PHONE_ERROR)
             else:
-                conflict = identity_conflict_error(first_name, last_name, new_email, phone, exclude_user_id=user.id) if is_patient else None
+                conflict_email = new_email if email_changed else ""
+                conflict_phone = phone if phone_changed else ""
+                conflict = identity_conflict_error(first_name, last_name, conflict_email, conflict_phone, exclude_user_id=user.id) if is_patient else None
                 if conflict:
                     messages.error(request, conflict)
                     context = {
@@ -511,7 +528,7 @@ def change_user_role(request, user_id):
             profile.role = new_role
             profile.save()
 
-    return redirect("doctor_manage_users")
+    return redirect_to_next(request, "doctor_manage_users")
 
 @login_required
 def doctor_set_appointment(request):
@@ -673,7 +690,7 @@ def cancel_appointment(request, appointment_id):
     else:
         messages.error(request, "This appointment cannot be cancelled.")
 
-    return redirect('patient_sessions')
+    return redirect_to_next(request, 'patient_sessions')
 
 @login_required
 def doctor_cancel_appointment(request, appointment_id):
@@ -690,7 +707,7 @@ def doctor_cancel_appointment(request, appointment_id):
     else:
         messages.error(request, "This appointment cannot be cancelled.")
 
-    return redirect('doctor_manage_sessions')
+    return redirect_to_next(request, 'doctor_manage_sessions')
 
 
 @login_required
@@ -707,7 +724,7 @@ def doctor_complete_appointment(request, appointment_id):
     else:
         messages.error(request, "This appointment cannot be marked as completed.")
 
-    return redirect("doctor_manage_sessions")
+    return redirect_to_next(request, "doctor_manage_sessions")
 
 
 @login_required
@@ -725,7 +742,7 @@ def doctor_confirm_appointment(request, appointment_id):
     else:
         messages.error(request, "Only pending appointments can be confirmed.")
 
-    return redirect("doctor_manage_sessions")
+    return redirect_to_next(request, "doctor_manage_sessions")
     
     
     
@@ -826,7 +843,7 @@ def secretary_confirm_appointment(request, pk):
         else:
             messages.error(request, "Only pending appointments can be confirmed.")
 
-    return redirect("secretary_manage_sessions")
+    return redirect_to_next(request, "secretary_manage_sessions")
     
 @login_required
 def secretary_cancel_appointment(request, pk):
@@ -840,7 +857,7 @@ def secretary_cancel_appointment(request, pk):
         appointment.save()
         messages.warning(request, f"Appointment {appointment.reference_number} has been Cancelled.")
     
-    return redirect("secretary_manage_sessions")
+    return redirect_to_next(request, "secretary_manage_sessions")
 
 @login_required
 def secretary_complete_appointment(request, pk):
@@ -854,7 +871,7 @@ def secretary_complete_appointment(request, pk):
         appointment.save()
         messages.success(request, f"Appointment {appointment.reference_number} marked as Completed.")
     
-    return redirect("secretary_manage_sessions")
+    return redirect_to_next(request, "secretary_manage_sessions")
 
 @login_required
 def doctor_manage_users(request):

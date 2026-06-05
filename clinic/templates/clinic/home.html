@@ -275,6 +275,18 @@
         margin-bottom: 24px;
     }
 
+    .modal-action-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+    }
+
+    .modal-action-row .btn-appointment {
+        margin-left: 0;
+        min-width: 220px;
+    }
+
     @keyframes modalFadeIn {
         from { transform: translateY(30px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
@@ -423,8 +435,8 @@ We empower our clients through expert care and the latest in regenerative medici
         <h2 id="modalTitle" style="font-family: 'Playfair Display', serif; color: var(--dark-text); margin-bottom: 10px;"></h2>
         <h4 id="modalPrice" style="color: var(--primary-pink); margin-bottom: 20px;"></h4>
         <p id="modalDesc" style="color: #666; line-height: 1.8; margin-bottom: 30px;"></p>
-        <div style="text-align: center;">
-            <a href="#contact" onclick="closeModal()" class="btn-appointment" style="display: inline-block;">Contact Clinic</a>
+        <div class="modal-action-row">
+            <a href="#contact" onclick="closeModal()" class="btn-appointment">Contact Clinic</a>
         </div>
     </div>
 </div>

@@ -234,6 +234,43 @@ class ClinicFlowIntegrityTests(TestCase):
         users_response = self.client.get(reverse("doctor_manage_users"))
         self.assertContains(users_response, "#SA-")
 
+    def test_profile_update_allows_unchanged_original_email(self):
+        duplicate = User.objects.create_user(
+            username="duplicate-email",
+            password="pass12345",
+            first_name="Other",
+            last_name="Account",
+            email=self.patient.email,
+        )
+        duplicate.profile.role = "PATIENT"
+        duplicate.profile.save()
+
+        self.client.login(username="patient1", password="pass12345")
+        response = self.client.post(reverse("patient_profile"), {
+            "update_profile": "1",
+            "first_name": self.patient.first_name,
+            "last_name": self.patient.last_name,
+            "username": self.patient.username,
+            "email": self.patient.email,
+            "phone": self.patient.profile.phone_number,
+        })
+
+        self.assertRedirects(response, reverse("patient_profile"))
+        self.assertFalse(
+            any("Email is already used" in str(message) for message in response.wsgi_request._messages)
+        )
+
+    def test_status_updates_redirect_back_to_current_filtered_page(self):
+        appointment = self.create_future_appointment()
+        self.client.login(username="doctor1", password="pass12345")
+        next_url = f'{reverse("doctor_manage_sessions")}?status=pending&search=TRN-0013'
+
+        response = self.client.post(reverse("doctor_confirm_appointment", args=[appointment.id]), {
+            "next": next_url,
+        })
+
+        self.assertRedirects(response, next_url, fetch_redirect_response=False)
+
     def test_custom_models_use_readable_postgres_table_names(self):
         self.assertEqual(Service._meta.db_table, "services")
         self.assertEqual(Appointment._meta.db_table, "appointments")

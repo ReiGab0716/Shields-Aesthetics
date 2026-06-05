@@ -133,6 +133,31 @@
     max-width: 320px;
 }
 
+.manage-users-search-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.role-filter-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+    align-items: stretch;
+}
+
+.role-filter-tabs .filter-btn {
+    min-height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    box-sizing: border-box;
+}
+
 .search-input {
     width: 100%;
     padding: 12px 18px 12px 45px;
@@ -204,11 +229,39 @@
     background: #FFC0CB;
     color: #fff;
 }
+
+@media (max-width: 768px) {
+    .users-card {
+        padding: 24px;
+        border-radius: 24px;
+    }
+
+    .manage-users-search-form .search-box {
+        max-width: none !important;
+        flex: 1 1 100%;
+    }
+
+    .manage-users-search-form .filter-btn {
+        flex: 1 1 120px;
+        text-align: center;
+    }
+
+    .role-filter-tabs {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+}
+
+@media (max-width: 420px) {
+    .role-filter-tabs {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
 <h2 class="title-text">Manage Users</h2>
 
-<form method="GET" style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
+<form method="GET" class="manage-users-search-form">
 
     <input type="hidden" name="role" value="{{ role_filter }}">
 
@@ -233,7 +286,7 @@
 </form>
 
 <div class="users-card">
-<div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+<div class="role-filter-tabs">
 
     <a href="?role=ALL" class="filter-btn {% if role_filter == 'ALL' %}active{% endif %}">
         All
@@ -282,6 +335,7 @@
             <td>
                 <form method="POST" action="{% url 'change_user_role' profile.user.id %}" class="role-change-form" data-user-name="{{ profile.user.get_full_name|default:profile.user.username }}">
                     {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
                     <select name="role" class="role-select" data-original-role="{{ profile.role }}">
                         <option value="PATIENT" {% if profile.role == "PATIENT" %}selected{% endif %}>Patient</option>
                         <option value="SECRETARY" {% if profile.role == "SECRETARY" %}selected{% endif %}>Secretary</option>
